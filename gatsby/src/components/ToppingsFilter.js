@@ -28,13 +28,12 @@ const ToppingsStyles = styled.div`
       color: var(--text-color, inherit);
     }
 
-    .active {
+    &.active {
       background: var(--yellow);
     }
 
     &:hover {
       --text-color: white;
-
       background: var(--red);
     }
   }
@@ -70,6 +69,10 @@ const ToppingsFilter = () => {
   const toppings = countPizzasInToppings(pizzas)
   return (
     <ToppingsStyles>
+      <Link to="/pizzas" activeClassName="active">
+        <span className="name">All</span>
+        <span className="count">{pizzas.length}</span>
+      </Link>
       {toppings.map((topping) => (
         <Link
           key={topping.id}

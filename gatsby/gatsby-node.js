@@ -1,8 +1,9 @@
 import path from 'path'
+import 'isomorphic-fetch'
 
 async function pizzaPages({ graphql, actions }) {
   console.log('\nCreating Pizza Pages\n')
-  const pizzaTemplate = path.resolve('./src/templates/PizzaTemplate.js')
+  const template = path.resolve('./src/templates/PizzaTemplate.js')
   const {
     data: {
       pizzas: { nodes: pizzas },
@@ -25,7 +26,7 @@ async function pizzaPages({ graphql, actions }) {
     )
     actions.createPage({
       path: `pizza/${pizza.slug.current}`,
-      component: pizzaTemplate,
+      component: template,
       context: {
         slug: pizza.slug.current,
       },
@@ -34,10 +35,68 @@ async function pizzaPages({ graphql, actions }) {
   console.log('\nFinished creating Pizza Pages\n\n')
 }
 
-export const createPages = async ({ graphql, actions }) => {
+async function toppingPages({ graphql, actions }) {
+  console.log('\nCreating Topping Pages\n')
+  const template = path.resolve('./src/pages/pizzas.js')
+  const {
+    data: {
+      toppings: { nodes: toppings },
+    },
+  } = await graphql(`
+    query {
+      toppings: allSanityTopping {
+        nodes {
+          id
+          name
+        }
+      }
+    }
+  `)
+  toppings.forEach((topping) => {
+    console.log(
+      `Creating page for ${topping.name} at '/topping/${topping.name}'`
+    )
+    actions.createPage({
+      path: `topping/${topping.name}`,
+      component: template,
+      context: {
+        id: topping.id,
+      },
+    })
+  })
+  console.log('\nFinished creating Topping Pages\n\n')
+}
+
+async function beerNodes({ actions, createNodeId, createContentDigest }) {
+  console.log('\nCreating Beer Nodes\n')
+  const baseURL = 'https://sampleapis.com/beers/api/ale'
+  const beers = await fetch(baseURL).then((resp) => resp.json())
+
+  for (const beer of beers) {
+    const nodeMeta = {
+      id: createNodeId(beer.name.toLowerCase().replace(/ /g, '_')),
+      parent: null,
+      children: [],
+      internal: {
+        type: `Beer`,
+        mediaType: `application/json`,
+        contentDigest: createContentDigest(beer),
+      },
+    }
+    actions.createNode({ ...beer, ...nodeMeta })
+  }
+
+  console.log('Finished creating Beer Nodes\n\n')
+}
+
+export const sourceNodes = async (params) => {
+  await Promise.all([beerNodes(params)])
+}
+
+export const createPages = async (params) => {
   // Pages to create
   // 1. pizzas
-  await pizzaPages({ graphql, actions })
   // 2. toppings
+  await Promise.all([pizzaPages(params), toppingPages(params)])
   // 3. slicemasters
 }
